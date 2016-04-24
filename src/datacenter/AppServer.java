@@ -21,6 +21,8 @@ public class AppServer {
 
 	// private static AppServer appServer;
 
+	private static final int CLIENTS_PORT = 8887;
+
 	private static final int DC_PORT = 8888;
 
 	private AtomicInteger clock = new AtomicInteger();
@@ -59,6 +61,10 @@ public class AppServer {
 		datacenterIP = new ArrayList<>();
 	}
 
+	private void handleClientsReq(String req) {
+		System.out.println(req);
+	}
+
 	private void receive(SyncData syncData) {
 		syncData.printSyncData();
 	}
@@ -67,6 +73,9 @@ public class AppServer {
 		// int numOfDC = Integer.parseInt(args[1]);
 		AppServer appServer = new AppServer();
 		appServer.datacenterIP.add("127.0.0.1");
+
+		Thread listenToClientsThread = new Thread(appServer.new ListenToClientsThread());
+		listenToClientsThread.start();
 
 		boolean requester = false;
 		if (requester) {
@@ -89,6 +98,11 @@ public class AppServer {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+		}
+		try {
+			listenToClientsThread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -124,6 +138,54 @@ public class AppServer {
 	 * oos.writeObject(syncData); oos.flush(); socket.close(); } catch
 	 * (IOException e) { e.printStackTrace(); } } }
 	 */
+
+	public class ListenToClientsThread extends Thread {
+		ServerSocket listenToClientsSocket;
+
+		@Override
+		public void run() {
+			try {
+				listenToClientsSocket = new ServerSocket(CLIENTS_PORT, 5);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			while (true) {
+				Socket socket;
+				try {
+					socket = listenToClientsSocket.accept();
+					Thread t = new Thread(new ListenToClientsSocketHandler(socket));
+					t.start();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		public class ListenToClientsSocketHandler implements Runnable {
+			private Socket connectedSocket;
+
+			public ListenToClientsSocketHandler(Socket connectedSocket) {
+				this.connectedSocket = connectedSocket;
+			}
+
+			@Override
+			public void run() {
+				try {
+					InputStreamReader isr = new InputStreamReader(connectedSocket.getInputStream());
+					BufferedReader br = new BufferedReader(isr);
+					String req = br.readLine();
+
+					AppServer.this.handleClientsReq(req);
+
+					connectedSocket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+				System.out.println("End of ListenToClientsSocketHandler!");
+			}
+		}
+	}
 
 	public class ListenToDCThread extends Thread {
 		ServerSocket listenToDCSocket;
