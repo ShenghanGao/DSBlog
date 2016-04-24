@@ -51,6 +51,11 @@ public class AppServer {
 		post = new PostOperation("Message 2");
 		e = new Event(post, 2, 2);
 		log.add(e);
+		messages.add("Message1");
+		messages.add("Message2");
+		messages.add("Message3");
+		messages.add("Message4");
+		messages.add("Added msg!");
 	}
 
 	public AppServer(int numOfDC) {
@@ -61,8 +66,31 @@ public class AppServer {
 		datacenterIP = new ArrayList<>();
 	}
 
-	private void handleClientsReq(String req) {
+	private synchronized void handleClientsReq(String req, Socket socket) {
 		System.out.println(req);
+
+		String[] ss = req.split(" ", 2);
+		if (ss[0].compareTo("p") == 0) {
+			post(ss[1]);
+		} else if (ss[0].compareTo("l") == 0) {
+			lookup(socket);
+		} else if (ss[0].compareTo("s") == 0) {
+
+		}
+	}
+
+	private void post(String message) {
+
+	}
+
+	private void lookup(Socket socket) {
+		try {
+			ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+			oos.writeObject(messages);
+			oos.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void receive(SyncData syncData) {
@@ -175,7 +203,7 @@ public class AppServer {
 					BufferedReader br = new BufferedReader(isr);
 					String req = br.readLine();
 
-					AppServer.this.handleClientsReq(req);
+					AppServer.this.handleClientsReq(req, connectedSocket);
 
 					connectedSocket.close();
 				} catch (IOException e) {
