@@ -80,7 +80,7 @@ public class AppServer {
 	}
 
 	private void post(String message) {
-
+		messages.add(message);
 	}
 
 	private void lookup(Socket socket) {
@@ -91,6 +91,20 @@ public class AppServer {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private void sync(String desIP) {
+
+		// System.out.println("RequestForSync!");
+		// Runnable r = appServer.new SyncWithDCThread(0);
+		// Thread syncWithDCThread = new Thread(r);
+		// syncWithDCThread.start();
+		// try {
+		// syncWithDCThread.join();
+		// } catch (InterruptedException e) {
+		// e.printStackTrace();
+		// }
+
 	}
 
 	private void receive(SyncData syncData) {

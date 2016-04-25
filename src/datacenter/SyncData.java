@@ -22,6 +22,18 @@ public class SyncData implements Serializable {
 		}
 	}
 
+	public List<Event> getEvents(int x, int y) {
+		return events;
+	}
+
+	public int getTableEntry(int x, int y) {
+		return timeTable[x][y];
+	}
+
+	public void setTableEntry(int x, int y, int val) {
+		timeTable[x][y] = val;
+	}
+
 	public void printSyncData() {
 		int dim = timeTable.length;
 
