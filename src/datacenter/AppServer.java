@@ -19,11 +19,13 @@ import api.PostOperation;
 
 public class AppServer {
 
-	// private static AppServer appServer;
+	private static AppServer appServer;
 
 	private static final int CLIENTS_PORT = 8887;
 
 	private static final int DC_PORT = 8888;
+
+	private static int nodeId;
 
 	private AtomicInteger clock = new AtomicInteger();
 
@@ -40,7 +42,7 @@ public class AppServer {
 	private static int nodeId;
 
 	public AppServer() {
-		this(3);
+		this(3, 0);
 		int cnt = 2;
 		for (int i = 0; i < 3; ++i) {
 			for (int j = 0; j < 3; ++j) {
@@ -60,12 +62,14 @@ public class AppServer {
 		messages.add("Added msg!");
 	}
 
-	public AppServer(int numOfDC) {
+	public AppServer(int numOfDC, int nodeId) {
+		this.nodeId = nodeId;
 		timeTable = new int[numOfDC][numOfDC];
 		log = new ArrayList<>();
 		messages = new ArrayList<>();
 		clientIP = new ArrayList<>();
 		datacenterIP = new ArrayList<>();
+		System.out.println("My nodeId is " + this.nodeId);
 	}
 
 	private synchronized void handleClientsReq(String req, Socket socket) {
@@ -188,16 +192,17 @@ public class AppServer {
 	
 	public static void main(String[] args) throws UnknownHostException {
 		// int numOfDC = Integer.parseInt(args[1]);
-		AppServer appServer = new AppServer();
+		appServer = new AppServer();
+
 		appServer.datacenterIP.add("127.0.0.1");
 
-		Thread listenToClientsThread = new Thread(appServer.new ListenToClientsThread());
+		Thread listenToClientsThread = new Thread(new ListenToClientsThread());
 		listenToClientsThread.start();
 
 		boolean requester = false;
 		if (requester) {
 			System.out.println("RequestForSync!");
-			Runnable r = appServer.new SyncWithDCThread(0);
+			Runnable r = new SyncWithDCThread(0);
 			Thread syncWithDCThread = new Thread(r);
 			syncWithDCThread.start();
 			try {
@@ -208,7 +213,7 @@ public class AppServer {
 
 		} else {
 			System.out.println("Server!");
-			Thread listenToDCThread = appServer.new ListenToDCThread();
+			Thread listenToDCThread = new ListenToDCThread();
 			listenToDCThread.start();
 			try {
 				listenToDCThread.join();
@@ -256,7 +261,7 @@ public class AppServer {
 	 * (IOException e) { e.printStackTrace(); } } }
 	 */
 
-	public class ListenToClientsThread extends Thread {
+	public static class ListenToClientsThread extends Thread {
 		ServerSocket listenToClientsSocket;
 
 		@Override
@@ -292,7 +297,7 @@ public class AppServer {
 					BufferedReader br = new BufferedReader(isr);
 					String req = br.readLine();
 
-					AppServer.this.handleClientsReq(req, connectedSocket);
+					AppServer.appServer.handleClientsReq(req, connectedSocket);
 
 					connectedSocket.close();
 				} catch (IOException e) {
@@ -304,7 +309,7 @@ public class AppServer {
 		}
 	}
 
-	public class ListenToDCThread extends Thread {
+	public static class ListenToDCThread extends Thread {
 		ServerSocket listenToDCSocket;
 
 		@Override
@@ -342,7 +347,11 @@ public class AppServer {
 					System.out.println("signal = " + signal);
 
 					ObjectOutputStream oos = new ObjectOutputStream(connectedSocket.getOutputStream());
+<<<<<<< HEAD
 					SyncData syncData = Send(targetId, AppServer.this.log, AppServer.this.timeTable);
+=======
+					SyncData syncData = new SyncData(AppServer.appServer.log, AppServer.appServer.timeTable);
+>>>>>>> refs/remotes/origin/master
 					oos.writeObject(syncData);
 					oos.flush();
 					connectedSocket.close();
@@ -354,7 +363,7 @@ public class AppServer {
 		}
 	}
 
-	public class SyncWithDCThread implements Runnable {
+	public static class SyncWithDCThread implements Runnable {
 		Socket socket;
 
 		private InetAddress desAddress;
@@ -384,7 +393,7 @@ public class AppServer {
 			try {
 				ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
 				SyncData syncData = (SyncData) ois.readObject();
-				AppServer.this.receive(syncData);
+				AppServer.appServer.receive(syncData);
 				socket.close();
 			} catch (IOException | ClassNotFoundException e) {
 				e.printStackTrace();
