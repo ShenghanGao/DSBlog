@@ -8,7 +8,8 @@ public class SyncData implements Serializable {
 	private static final long serialVersionUID = 1965304440603696756L;
 	private List<Event> events;
 	private int[][] timeTable;
-
+	private int nodeId;
+	
 	public SyncData(List<Event> e, int[][] tt) {
 		int dim = tt.length;
 		events = new ArrayList<>(e);
@@ -22,7 +23,21 @@ public class SyncData implements Serializable {
 		}
 	}
 
-	public List<Event> getEvents(int x, int y) {
+	public SyncData(int id, List<Event> e, int[][] tt) {
+		nodeId = id;
+		int dim = tt.length;
+		events = new ArrayList<>(e);
+		timeTable = new int[dim][dim];
+
+		System.out.println(tt.length);
+		for (int i = 0; i < dim; ++i) {
+			for (int j = 0; j < dim; ++j) {
+				timeTable[i][j] = tt[i][j];
+			}
+		}
+	}
+	
+	public List<Event> getEvents() {
 		return events;
 	}
 
@@ -34,6 +49,10 @@ public class SyncData implements Serializable {
 		timeTable[x][y] = val;
 	}
 
+	public int getId(){
+		return nodeId;
+	}
+	
 	public void printSyncData() {
 		int dim = timeTable.length;
 

@@ -14,4 +14,16 @@ public class Event implements Serializable {
 		this.time = time;
 		this.nodeId = nodeId;
 	}
+	
+	public int getTime(){
+		return time;
+	}
+	
+	public int getId(){
+		return nodeId;
+	}
+	
+	public String getMessage(){
+		return op.getMessage();
+	}
 }
