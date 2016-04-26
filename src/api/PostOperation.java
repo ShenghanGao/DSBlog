@@ -8,4 +8,8 @@ public class PostOperation extends Operation {
 		this.message = message;
 	}
 
+	@Override
+	public String getOperationParameters() {
+		return message;
+	}
 }

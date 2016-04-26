@@ -12,4 +12,6 @@ public abstract class Operation implements Serializable {
 	public OperationType getOperationType() {
 		return this.operationType;
 	}
+
+	public abstract String getOperationParameters();
 }

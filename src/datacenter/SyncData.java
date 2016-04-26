@@ -6,10 +6,13 @@ import java.util.List;
 
 public class SyncData implements Serializable {
 	private static final long serialVersionUID = 1965304440603696756L;
+
+	private int nodeId;
 	private List<Event> events;
 	private int[][] timeTable;
 
-	public SyncData(List<Event> e, int[][] tt) {
+	public SyncData(int nodeId, List<Event> e, int[][] tt) {
+		this.nodeId = nodeId;
 		int dim = tt.length;
 		events = new ArrayList<>(e);
 		timeTable = new int[dim][dim];
@@ -22,7 +25,7 @@ public class SyncData implements Serializable {
 		}
 	}
 
-	public List<Event> getEvents(int x, int y) {
+	public List<Event> getEvents() {
 		return events;
 	}
 
@@ -32,6 +35,10 @@ public class SyncData implements Serializable {
 
 	public void setTableEntry(int x, int y, int val) {
 		timeTable[x][y] = val;
+	}
+
+	public int getNodeId() {
+		return nodeId;
 	}
 
 	public void printSyncData() {

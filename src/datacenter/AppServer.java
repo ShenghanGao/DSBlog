@@ -40,7 +40,7 @@ public class AppServer {
 	private List<String> datacenterIP;
 
 	public AppServer() {
-		this(3, 0);
+		this(3);
 		int cnt = 2;
 		for (int i = 0; i < 3; ++i) {
 			for (int j = 0; j < 3; ++j) {
@@ -57,17 +57,15 @@ public class AppServer {
 		messages.add("Message2");
 		messages.add("Message3");
 		messages.add("Message4");
-		messages.add("Added msg!");
 	}
 
-	public AppServer(int numOfDC, int nodeId) {
-		this.nodeId = nodeId;
-		timeTable = new int[numOfDC][numOfDC];
-		log = new ArrayList<>();
-		messages = new ArrayList<>();
-		clientIP = new ArrayList<>();
-		datacenterIP = new ArrayList<>();
-		System.out.println("My nodeId is " + this.nodeId);
+	public AppServer(int numOfDC) {
+		this.timeTable = new int[numOfDC][numOfDC];
+		this.log = new ArrayList<>();
+		this.messages = new ArrayList<>();
+		this.clientIP = new ArrayList<>();
+		this.datacenterIP = new ArrayList<>();
+		System.out.println("My nodeId is " + AppServer.nodeId);
 	}
 
 	private synchronized void handleClientsReq(String req, Socket socket) {
@@ -85,6 +83,13 @@ public class AppServer {
 
 	private void post(String message) {
 		messages.add(message);
+
+		int id = AppServer.nodeId;
+		int currentTime = clock.getAndIncrement();
+		Operation post = new PostOperation(message);
+		Event e = new Event(post, currentTime, id);
+		log.add(e);
+		timeTable[id][id] = currentTime;
 	}
 
 	private void lookup(Socket socket) {
@@ -98,9 +103,8 @@ public class AppServer {
 	}
 
 	private void sync(String desIP) {
-
 		// System.out.println("RequestForSync!");
-		// Runnable r = appServer.new SyncWithDCThread(0);
+		// Runnable r = new SyncWithDCThread(0);
 		// Thread syncWithDCThread = new Thread(r);
 		// syncWithDCThread.start();
 		// try {
@@ -108,15 +112,68 @@ public class AppServer {
 		// } catch (InterruptedException e) {
 		// e.printStackTrace();
 		// }
+	}
 
+	public static boolean hasReceive(int[][] timeTable, int id, int eventNode, int eventTime) {
+		return timeTable[id][eventNode] >= eventTime;
 	}
 
 	private void receive(SyncData syncData) {
 		syncData.printSyncData();
+
+		// update messages
+		List<Event> tmp = syncData.getEvents();
+		List<Event> newEvents = new ArrayList<>();
+		int num = tmp.size();
+		for (int i = 0; i < num; ++i) {
+			int ti = tmp.get(i).getTime();
+			int eventNode = tmp.get(i).getNodeId();
+			if (!hasReceive(this.timeTable, nodeId, eventNode, ti)) {
+				newEvents.add(tmp.get(i));
+			}
+		}
+
+		for (int i = 0; i < newEvents.size(); ++i)
+			messages.add(newEvents.get(i).getOperationParameters());
+
+		for (int i = 0; i < newEvents.size(); ++i)
+			log.add(newEvents.get(i));
+
+		// update timeTable
+		int dim = timeTable.length;
+
+		int id1 = nodeId;
+		int id2 = syncData.getNodeId();
+		for (int j = 0; j < dim; ++j) {
+			timeTable[id1][j] = Math.max(timeTable[id1][j], syncData.getTableEntry(id2, j));
+		}
+
+		for (int i = 0; i < dim; ++i) {
+			for (int j = 0; j < dim; ++j) {
+				timeTable[i][j] = Math.max(timeTable[i][j], syncData.getTableEntry(i, j));
+			}
+		}
+
+		// garbage collect the log
+		List<Event> tmpLog = new ArrayList<Event>();
+		for (int i = 0; i < log.size(); ++i) {
+			Event e = log.get(i);
+			int ti = e.getTime();
+			int eventNode = e.getNodeId();
+			for (int j = 0; j < dim; ++j) {
+				if (!hasReceive(this.timeTable, j, eventNode, ti)) {
+					tmpLog.add(e);
+					break;
+				}
+			}
+		}
+		log = tmpLog;
 	}
 
 	public static void main(String[] args) throws UnknownHostException {
 		// int numOfDC = Integer.parseInt(args[1]);
+
+		AppServer.nodeId = Integer.parseInt(args[0]);
 		appServer = new AppServer();
 
 		appServer.datacenterIP.add("127.0.0.1");
@@ -272,7 +329,11 @@ public class AppServer {
 					System.out.println("signal = " + signal);
 
 					ObjectOutputStream oos = new ObjectOutputStream(connectedSocket.getOutputStream());
-					SyncData syncData = new SyncData(AppServer.appServer.log, AppServer.appServer.timeTable);
+
+					// SyncData syncData = send(targetId,
+					// AppServer.appServer.log, AppServer.appServer.timeTable);
+					SyncData syncData = send(0, AppServer.appServer.log, AppServer.appServer.timeTable);
+
 					oos.writeObject(syncData);
 					oos.flush();
 					connectedSocket.close();
@@ -280,6 +341,20 @@ public class AppServer {
 					e.printStackTrace();
 				}
 				System.out.println("End of ListenToDCSocketHandler!");
+			}
+
+			public SyncData send(int targetNode, List<Event> logFile, int[][] TT) {
+				List<Event> tmpLog = new ArrayList<Event>();
+				for (int i = 0; i < logFile.size(); ++i) {
+					Event e = logFile.get(i);
+					int eventNode = e.getNodeId();
+					int ti = e.getTime();
+					if (!AppServer.hasReceive(TT, targetNode, eventNode, ti)) {
+						tmpLog.add(e);
+					}
+				}
+				SyncData sync = new SyncData(nodeId, tmpLog, TT);
+				return sync;
 			}
 		}
 	}
@@ -289,10 +364,14 @@ public class AppServer {
 
 		private InetAddress desAddress;
 
-		public SyncWithDCThread(int des) throws UnknownHostException {
+		public SyncWithDCThread(int des) {
 			// desAddress =
 			// InetAddress.getByName(AppServer.this.datacenterIP.get(des));
-			desAddress = InetAddress.getByName("127.0.0.1");
+			try {
+				desAddress = InetAddress.getByName("127.0.0.1");
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			}
 		}
 
 		@Override
