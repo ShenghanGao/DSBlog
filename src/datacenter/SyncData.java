@@ -33,10 +33,6 @@ public class SyncData implements Serializable {
 		return timeTable[x][y];
 	}
 
-	public void setTableEntry(int x, int y, int val) {
-		timeTable[x][y] = val;
-	}
-
 	public int getNodeId() {
 		return nodeId;
 	}

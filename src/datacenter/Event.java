@@ -5,6 +5,8 @@ import java.io.Serializable;
 import api.Operation;
 
 public class Event implements Serializable {
+
+	private static final long serialVersionUID = 3515128752435636560L;
 	private Operation op;
 	private int time;
 	private int nodeId;

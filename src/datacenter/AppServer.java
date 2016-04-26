@@ -27,7 +27,7 @@ public class AppServer {
 
 	private static int nodeId;
 
-	private AtomicInteger clock = new AtomicInteger();
+	private AtomicInteger clock = new AtomicInteger(1);
 
 	private int[][] timeTable;
 
@@ -68,15 +68,13 @@ public class AppServer {
 	}
 
 	private synchronized void handleClientsReq(String req, Socket socket) {
-		// System.out.println(req);
-
 		String[] ss = req.split(" ", 2);
 		if (ss[0].compareTo("p") == 0) {
 			post(ss[1]);
 		} else if (ss[0].compareTo("l") == 0) {
 			lookup(socket);
 		} else if (ss[0].compareTo("s") == 0) {
-			sync(1);
+			sync(Integer.parseInt(ss[1]));
 		}
 	}
 
@@ -88,7 +86,7 @@ public class AppServer {
 		Operation post = new PostOperation(message);
 		Event e = new Event(post, currentTime, id);
 		log.add(e);
-		timeTable[id][id] = currentTime;
+		timeTable[id - 1][id - 1] = currentTime;
 	}
 
 	private void lookup(Socket socket) {
@@ -114,7 +112,7 @@ public class AppServer {
 	}
 
 	public static boolean hasReceive(int[][] timeTable, int id, int eventNode, int eventTime) {
-		return timeTable[id][eventNode] >= eventTime;
+		return timeTable[id - 1][eventNode - 1] >= eventTime;
 	}
 
 	private void receive(SyncData syncData) {
@@ -125,8 +123,8 @@ public class AppServer {
 		List<Event> newEvents = new ArrayList<>();
 		int num = tmp.size();
 		for (int i = 0; i < num; ++i) {
-			int ti = tmp.get(i).getTime();
 			int eventNode = tmp.get(i).getNodeId();
+			int ti = tmp.get(i).getTime();
 			if (!hasReceive(this.timeTable, nodeId, eventNode, ti)) {
 				newEvents.add(tmp.get(i));
 			}
@@ -144,7 +142,7 @@ public class AppServer {
 		int id1 = nodeId;
 		int id2 = syncData.getNodeId();
 		for (int j = 0; j < dim; ++j) {
-			timeTable[id1][j] = Math.max(timeTable[id1][j], syncData.getTableEntry(id2, j));
+			timeTable[id1 - 1][j] = Math.max(timeTable[id1 - 1][j], syncData.getTableEntry(id2 - 1, j));
 		}
 
 		for (int i = 0; i < dim; ++i) {
@@ -154,12 +152,12 @@ public class AppServer {
 		}
 
 		// garbage collect the log
-		List<Event> tmpLog = new ArrayList<Event>();
+		List<Event> tmpLog = new ArrayList<>();
 		for (int i = 0; i < log.size(); ++i) {
 			Event e = log.get(i);
-			int ti = e.getTime();
 			int eventNode = e.getNodeId();
-			for (int j = 0; j < dim; ++j) {
+			int ti = e.getTime();
+			for (int j = 1; j <= dim; ++j) {
 				if (!hasReceive(this.timeTable, j, eventNode, ti)) {
 					tmpLog.add(e);
 					break;
@@ -176,28 +174,33 @@ public class AppServer {
 		// appServer = new AppServer(2);
 
 		List<String> datacenterIPs = new ArrayList<>();
-		datacenterIPs.add("169.231.28.43");
-		datacenterIPs.add("128.111.43.39");
-		datacenterIPs.add("128.111.43.56");
+
+		datacenterIPs.add("128.111.43.41");
+		datacenterIPs.add("169.231.76.63");
+		// datacenterIPs.add("128.111.43.41");
+		// datacenterIPs.add("128.111.43.56");
+
+		int numOfNodes = datacenterIPs.size();
 
 		InetAddress inetAddress = InetAddress.getLocalHost();
-		String IPAddress = inetAddress.getHostAddress();
+		String myIPAddress = inetAddress.getHostAddress();
 
 		// System.out.println("IPAddress = " + IPAddress);
 
-		appServer = new AppServer(datacenterIPs.size(), datacenterIPs);
+		AppServer.appServer = new AppServer(numOfNodes, datacenterIPs);
 
 		int k = 0;
-		for (; k < appServer.datacenterIP.size(); ++k) {
-			if (IPAddress.compareTo(appServer.datacenterIP.get(k)) == 0)
+		for (; k < numOfNodes; ++k) {
+			if (myIPAddress.compareTo(appServer.datacenterIP.get(k)) == 0)
 				break;
 		}
-		if (k == appServer.datacenterIP.size()) {
-			System.out.println("The IP of this machine is not in the list!");
+		if (k == numOfNodes) {
+			System.out.println("The IP address of this machine is not in the list!");
 			return;
 		}
 		AppServer.nodeId = k + 1;
 		System.out.println("My nodeId is " + AppServer.nodeId);
+		System.out.println("TT dim is " + AppServer.appServer.timeTable.length);
 
 		Thread listenToClientsThread = new Thread(new ListenToClientsThread());
 		listenToClientsThread.start();
@@ -359,6 +362,9 @@ public class AppServer {
 					int targetId = Integer.parseInt(br.readLine());
 					// System.out.println("signal = " + signal);
 
+					if (signal.compareTo("S") != 0)
+						return;
+
 					System.out.println("targetId = " + targetId);
 
 					ObjectOutputStream oos = new ObjectOutputStream(connectedSocket.getOutputStream());
@@ -377,7 +383,7 @@ public class AppServer {
 			}
 
 			public SyncData send(int targetNode, List<Event> logFile, int[][] TT) {
-				List<Event> tmpLog = new ArrayList<Event>();
+				List<Event> tmpLog = new ArrayList<>();
 				for (int i = 0; i < logFile.size(); ++i) {
 					Event e = logFile.get(i);
 					int eventNode = e.getNodeId();
