@@ -35,35 +35,12 @@ public class AppServer {
 
 	private List<String> messages;
 
-	private List<String> clientIP;
-
 	private List<String> datacenterIP;
-
-	public AppServer() {
-		// this(3);
-		int cnt = 2;
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 3; ++j) {
-				this.timeTable[i][j] = cnt++;
-			}
-		}
-		// Operation post = new PostOperation("Message 1");
-		// Event e = new Event(post, 1, 1);
-		// log.add(e);
-		// post = new PostOperation("Message 2");
-		// e = new Event(post, 2, 2);
-		// log.add(e);
-		// messages.add("Message1");
-		// messages.add("Message2");
-		// messages.add("Message3");
-		// messages.add("Message4");
-	}
 
 	public AppServer(int numOfDC, List<String> datacenterIPs) {
 		this.timeTable = new int[numOfDC][numOfDC];
 		this.log = new ArrayList<>();
 		this.messages = new ArrayList<>();
-		this.clientIP = new ArrayList<>();
 		this.datacenterIP = new ArrayList<>(datacenterIPs);
 	}
 
@@ -168,17 +145,12 @@ public class AppServer {
 	}
 
 	public static void main(String[] args) throws UnknownHostException {
-		// int numOfDC = Integer.parseInt(args[1]);
-
-		// AppServer.nodeId = Integer.parseInt(args[0]);
-		// appServer = new AppServer(2);
-
 		List<String> datacenterIPs = new ArrayList<>();
 
-		datacenterIPs.add("128.111.43.41");
-		datacenterIPs.add("169.231.76.63");
-		// datacenterIPs.add("128.111.43.41");
-		// datacenterIPs.add("128.111.43.56");
+		datacenterIPs.add("128.111.43.40"); // thundarr.cs.ucsb.edu
+		// datacenterIPs.add("128.111.43.41"); //optimus.cs.ucsb.edu
+		// datacenterIPs.add("128.111.43.42"); //megatron.cs.ucsb.edu
+		datacenterIPs.add("169.231.10.153");
 
 		int numOfNodes = datacenterIPs.size();
 
@@ -205,34 +177,6 @@ public class AppServer {
 		Thread listenToClientsThread = new Thread(new ListenToClientsThread());
 		listenToClientsThread.start();
 
-		// boolean requester = false;
-		// if (requester) {
-		// System.out.println("RequestForSync!");
-		// Runnable r = new SyncWithDCThread(0);
-		// Thread syncWithDCThread = new Thread(r);
-		// syncWithDCThread.start();
-		// try {
-		// syncWithDCThread.join();
-		// } catch (InterruptedException e) {
-		// e.printStackTrace();
-		// }
-		//
-		// } else {
-		// System.out.println("Server!");
-		// Thread listenToDCThread = new ListenToDCThread();
-		// listenToDCThread.start();
-		// try {
-		// listenToDCThread.join();
-		// } catch (InterruptedException e) {
-		// e.printStackTrace();
-		// }
-		// }
-		// try {
-		// listenToClientsThread.join();
-		// } catch (InterruptedException e) {
-		// e.printStackTrace();
-		// }
-
 		System.out.println("Server!");
 		Thread listenToDCThread = new ListenToDCThread();
 		listenToDCThread.start();
@@ -242,39 +186,6 @@ public class AppServer {
 			e.printStackTrace();
 		}
 	}
-
-	/*
-	 * private class ListenToDCThread extends Thread { ServerSocket
-	 * listenToDCSocket;
-	 * 
-	 * @Override public void run() { try { listenToDCSocket = new
-	 * ServerSocket(DC_PORT, 5); } catch (IOException e) { e.printStackTrace();
-	 * } while (true) { Socket socket; try { socket = listenToDCSocket.accept();
-	 * ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-	 * SyncData syncData = (SyncData) ois.readObject();
-	 * AppServer.this.receive(syncData); socket.close(); } catch (IOException |
-	 * ClassNotFoundException e) { e.printStackTrace(); } } } }
-	 */
-
-	/*
-	 * public class SendToDCThread implements Runnable { Socket socket;
-	 * 
-	 * private InetAddress desAddress;
-	 * 
-	 * public SendToDCThread(int des) throws UnknownHostException { //
-	 * desAddress = //
-	 * InetAddress.getByName(AppServer.this.datacenterIP.get(des)); desAddress =
-	 * InetAddress.getByName("127.0.0.1"); }
-	 * 
-	 * @Override public void run() { try { socket = new Socket(desAddress,
-	 * DC_PORT); } catch (IOException e) { e.printStackTrace(); }
-	 * 
-	 * try { ObjectOutputStream oos = new
-	 * ObjectOutputStream(socket.getOutputStream()); SyncData syncData = new
-	 * SyncData(AppServer.this.log, AppServer.this.timeTable);
-	 * oos.writeObject(syncData); oos.flush(); socket.close(); } catch
-	 * (IOException e) { e.printStackTrace(); } } }
-	 */
 
 	public static class ListenToClientsThread extends Thread {
 		ServerSocket listenToClientsSocket;
@@ -318,7 +229,6 @@ public class AppServer {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-
 				// System.out.println("End of ListenToClientsSocketHandler!");
 			}
 		}
@@ -370,8 +280,6 @@ public class AppServer {
 					ObjectOutputStream oos = new ObjectOutputStream(connectedSocket.getOutputStream());
 
 					SyncData syncData = send(targetId, AppServer.appServer.log, AppServer.appServer.timeTable);
-					// SyncData syncData = send(0, AppServer.appServer.log,
-					// AppServer.appServer.timeTable);
 
 					oos.writeObject(syncData);
 					oos.flush();
@@ -404,10 +312,7 @@ public class AppServer {
 		private InetAddress desAddress;
 
 		public SyncWithDCThread(int des) {
-			// desAddress =
-			// InetAddress.getByName(AppServer.this.datacenterIP.get(des));
 			try {
-				// desAddress = InetAddress.getByName("127.0.0.1");
 				desAddress = InetAddress.getByName(AppServer.appServer.datacenterIP.get(des - 1));
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
