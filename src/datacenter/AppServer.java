@@ -27,7 +27,7 @@ public class AppServer {
 
 	private static int nodeId;
 
-	private AtomicInteger clock = new AtomicInteger(1);
+	private AtomicInteger clock = new AtomicInteger();
 
 	private int[][] timeTable;
 
@@ -82,7 +82,7 @@ public class AppServer {
 		messages.add(message);
 
 		int id = AppServer.nodeId;
-		int currentTime = clock.getAndIncrement();
+		int currentTime = clock.incrementAndGet();
 		Operation post = new PostOperation(message);
 		Event e = new Event(post, currentTime, id);
 		log.add(e);
