@@ -147,12 +147,12 @@ public class AppServer {
 	public static void main(String[] args) throws UnknownHostException {
 		List<String> datacenterIPs = new ArrayList<>();
 
-		// datacenterIPs.add("128.111.43.40"); // thundarr.cs.ucsb.edu
-		// datacenterIPs.add("128.111.43.41"); //optimus.cs.ucsb.edu
-		// datacenterIPs.add("128.111.43.42"); //megatron.cs.ucsb.edu
-		datacenterIPs.add("128.111.43.56");
-		datacenterIPs.add("128.111.84.203");
-		datacenterIPs.add("128.111.84.167");
+		datacenterIPs.add("128.111.43.40"); // thundarr.cs.ucsb.edu
+		datacenterIPs.add("128.111.43.41"); //optimus.cs.ucsb.edu
+		datacenterIPs.add("128.111.43.42"); //megatron.cs.ucsb.edu
+		//datacenterIPs.add("128.111.84.167");
+		//datacenterIPs.add("128.111.84.203");
+		//datacenterIPs.add("128.111.43.56");
 
 		int numOfNodes = datacenterIPs.size();
 
