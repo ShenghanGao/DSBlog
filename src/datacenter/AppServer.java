@@ -174,7 +174,7 @@ public class AppServer {
 		}
 		AppServer.nodeId = k + 1;
 		System.out.println("My nodeId is " + AppServer.nodeId);
-		System.out.println("TT dim is " + AppServer.appServer.timeTable.length);
+		//System.out.println("TT dim is " + AppServer.appServer.timeTable.length);
 
 		Thread listenToClientsThread = new Thread(new ListenToClientsThread());
 		listenToClientsThread.start();
